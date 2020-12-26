@@ -4,8 +4,8 @@ var cors = require('cors');
 var errorhandler = require('errorhandler');
 var mongoose = require('mongoose');
 var CONF = require('./config');
-const swaggerJSDoc = require('swagger-jsdoc');
-const swaggerUi = require('swagger-ui-express');
+const expressJSDocSwagger = require('express-jsdoc-swagger');
+const jwt = require('express-jwt');
 
 var isProduction = process.env.NODE_ENV === 'production';
 
@@ -52,40 +52,41 @@ if(isProduction){
 }
 
 require('./models/User');
-require('./models/Article');
-require('./models/Comment');
-// require('./config/passport');
+// require('./models/Article');
+// require('./models/Comment');
+require('./config/passport');
 
 app.use(require('./routes'));
 
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 // Swagger definition
-// You can set every attribute except paths and swagger
-// https://github.com/swagger-api/swagger-spec/blob/master/versions/2.0.md
-const swaggerDefinition = {
-  info: { // API informations (required)
-    title: 'Auth Service', // Title (required)
-    version: '1.0.0', // Version (required)
-    description: 'Auth API' // Description (optional)
-  },
-  host: 'localhost:3000', // Host (optional)
-  basePath: '/' // Base path (optional)
-};
-
-// Options for the swagger docs
 const options = {
-  // Import swaggerDefinitions
-  swaggerDefinition,
-  // Path to the API docs
-  apis: ['./routes/api/*.js'] // api 파일 위치들 
+  info: {
+    version: '1.0.0',
+    title: 'API Swagger',
+    license: {
+      name: 'MIT',
+    },
+  },
+  security: {
+    BearerAuth: { 
+      type: 'http',
+      scheme: 'bearer',
+      beforeFormat: jwt
+    }
+  },
+  filesPattern: ['./routes/api/*.js', './models/*.js'], // Glob pattern to find your jsdoc files (it supports arrays too ['./**/*.controller.js', './**/*.route.js'])
+  swaggerUIPath: '/api-docs', // SwaggerUI will be render in this url. Default: '/api-docs'
+  baseDir: __dirname,
+  exposeSwaggerUI: true, // Expose OpenAPI UI. Default true
+  exposeApiDocs: false, // Expose Open API JSON Docs documentation in `apiDocsPath` path. Default false.
+  apiDocsPath: '/v3/api-docs', // Open API JSON Docs endpoint. Default value '/v3/api-docs'.
 };
+expressJSDocSwagger(app)(options);
+//////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
 
-// Initialize swagger-jsdoc -> returns validated swagger spec in json format
-const swaggerSpec = swaggerJSDoc(options);
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-//////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////
 
 /// catch 404 and forward to error handler
 app.use(function(req, res, next) {
